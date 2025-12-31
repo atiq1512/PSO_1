@@ -17,6 +17,13 @@ data = pd.read_csv("delhi_metro_updated.csv")
 data = data.head(5000)
 
 # ===============================
+# Add data cleaning steps: replace inf/-inf with NaN and drop rows with NaN
+# This helps prevent numerical issues in PSO and model training
+# ===============================
+data.replace([np.inf, -np.inf], np.nan, inplace=True)
+data.dropna(inplace=True)
+
+# ===============================
 # 2. Select numeric features only
 # ===============================
 X = data[['Distance_km', 'Fare', 'Cost_per_passenger']]
