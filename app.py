@@ -11,7 +11,7 @@ scaler = joblib.load("scaler.pkl")
 
 weights = model["weights"]
 bias = model["bias"]
-feature_names = model["feature_names"]  # now ['Distance_km', 'Fare', 'Cost_per_passenger']
+feature_names = model["feature_names"]  # ['Distance_km', 'Fare', 'Cost_per_passenger']
 
 # -------------------------------
 # 2. Streamlit UI
