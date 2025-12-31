@@ -62,12 +62,10 @@ st.metric("Estimated Passengers", int(y_pred[0]))
 # ===============================
 st.subheader("📌 Feature Contribution (PSO-Optimized Weights)")
 coef_df = pd.DataFrame({"Feature": feature_names, "Weight": weights})
-
-# Use Streamlit bar chart
 st.bar_chart(coef_df.set_index("Feature"))
 
 # ===============================
-# 8. Sensitivity Analysis (Optional)
+# 8. Sensitivity Analysis
 # ===============================
 st.subheader("⚡ Sensitivity Analysis")
 sensitivity_df = coef_df.copy()
@@ -97,14 +95,8 @@ with st.expander("🧠 How PSO Works"):
 # ===============================
 st.subheader("✅ Conclusion")
 st.markdown("""
-Particle Swarm Optimization successfully optimized the regression parameters
-for metro passenger prediction.  
-
-The model demonstrates reliable performance and is suitable for
+Particle Swarm Optimization successfully optimized the regression parameters.
+The model demonstrates reliable predictive performance and is suitable for
 transport demand forecasting applications.
 """)
 
-    The model demonstrates reliable predictive performance and is suitable for
-    **transport demand forecasting and planning applications**.
-    """
-)
