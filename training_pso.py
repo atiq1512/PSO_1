@@ -47,13 +47,13 @@ def fitness_function(weights):
     """
     if weights.size == 0:
         return np.array([np.inf])
-    
+
     w = weights[:, :-1]                  # (n_particles, n_features)
     b = weights[:, -1].reshape(1, -1)   # (1, n_particles)
-    
+
     y_pred = X_train_scaled @ w.T        # (n_samples, n_particles)
     y_pred += b                          # broadcast bias across samples
-    
+
     mse = np.mean((y_train.values.reshape(-1,1) - y_pred)**2, axis=0)
     return mse
 
@@ -63,10 +63,16 @@ def fitness_function(weights):
 dimensions = X_train_scaled.shape[1] + 1  # features + bias
 options = {"c1": 1.5, "c2": 1.5, "w": 0.7}
 
+# Define bounds for the weights and bias to prevent initial infinite costs
+max_param_value = 100.0 # A reasonable upper bound for scaled coefficients
+min_param_value = -100.0 # A reasonable lower bound for scaled coefficients
+bounds = (np.array([min_param_value] * dimensions), np.array([max_param_value] * dimensions))
+
 optimizer = ps.single.GlobalBestPSO(
     n_particles=15,       # smaller for faster Colab run
     dimensions=dimensions,
-    options=options
+    options=options,
+    bounds=bounds # Add bounds here
 )
 
 best_cost, best_position = optimizer.optimize(fitness_function, iters=50)
