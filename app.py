@@ -9,8 +9,9 @@ import joblib
 model = joblib.load("pso_model.pkl")
 scaler = joblib.load("scaler.pkl")
 
-weights = model["weights"]
-bias = model["bias"]
+# Ensure weights and bias are proper types
+weights = np.array(model["weights"])
+bias = float(model["bias"])
 feature_names = model["feature_names"]
 
 # ===============================
@@ -43,7 +44,9 @@ user_input = {}
 user_input["Distance_km"] = st.sidebar.number_input("Distance (km)", 0.0, 100.0, 10.0)
 user_input["Fare"] = st.sidebar.number_input("Fare", 0.0, 200.0, 30.0)
 user_input["Cost_per_passenger"] = st.sidebar.number_input("Cost per Passenger", 0.0, 100.0, 15.0)
-X_input = pd.DataFrame([user_input])
+
+# Ensure correct column order
+X_input = pd.DataFrame([user_input])[['Distance_km', 'Fare', 'Cost_per_passenger']]
 
 # ===============================
 # 5. Scale input & Predict
@@ -55,7 +58,10 @@ y_pred = np.dot(X_scaled, weights) + bias
 # 6. Prediction Output
 # ===============================
 st.subheader("📊 Prediction Result")
-st.metric("Estimated Passengers", int(y_pred[0]))
+st.metric("Estimated Passengers", round(y_pred[0], 2))
+
+# Optional: dynamic mini line chart for prediction
+st.line_chart(pd.DataFrame([y_pred], columns=["Predicted Passengers"]))
 
 # ===============================
 # 7. Feature Contribution
@@ -99,5 +105,4 @@ Particle Swarm Optimization successfully optimized the regression parameters.
 The model demonstrates reliable predictive performance and is suitable for
 transport demand forecasting applications.
 """)
-
 
