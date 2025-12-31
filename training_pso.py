@@ -11,7 +11,7 @@ import pyswarms as ps
 # ===============================
 data = pd.read_csv("delhi_metro_updated.csv")
 
-# Change target column if needed
+# Adjust target column if needed
 X = data.drop(columns=["ridership"])
 y = data["ridership"]
 
@@ -32,38 +32,29 @@ X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
 # ===============================
-# 4. Define Fitness Function
+# 4. Vectorized Fitness Function
 # ===============================
 def fitness_function(weights):
-    n_particles = weights.shape[0]
-    mse = np.zeros(n_particles)
-
-    for i in range(n_particles):
-        w = weights[i][:-1]
-        b = weights[i][-1]
-        y_pred = np.dot(X_train_scaled, w) + b
-        mse[i] = mean_squared_error(y_train, y_pred)
-
+    # weights shape: (n_particles, n_dimensions)
+    w = weights[:, :-1]              # all particle weights
+    b = weights[:, -1].reshape(-1,1) # all particle biases
+    y_pred = X_train_scaled @ w.T    # shape: (n_samples, n_particles)
+    mse = np.mean((y_train.values.reshape(-1,1) - y_pred)**2, axis=0)
     return mse
 
 # ===============================
 # 5. PSO Optimization
 # ===============================
 dimensions = X_train_scaled.shape[1] + 1  # weights + bias
-
-options = {
-    "c1": 1.5,
-    "c2": 1.5,
-    "w": 0.7
-}
+options = {"c1": 1.5, "c2": 1.5, "w": 0.7}
 
 optimizer = ps.single.GlobalBestPSO(
-    n_particles=30,
+    n_particles=15,  # faster
     dimensions=dimensions,
     options=options
 )
 
-best_cost, best_position = optimizer.optimize(fitness_function, iters=100)
+best_cost, best_position = optimizer.optimize(fitness_function, iters=50)  # faster
 
 # ===============================
 # 6. Extract Best Parameters
@@ -76,7 +67,6 @@ best_bias = best_position[-1]
 # ===============================
 y_test_pred = np.dot(X_test_scaled, best_weights) + best_bias
 test_mse = mean_squared_error(y_test, y_test_pred)
-
 print("Test MSE:", test_mse)
 
 # ===============================
@@ -90,12 +80,11 @@ pso_model = {
     "fitness_function": "Mean Squared Error",
     "optimizer": "Particle Swarm Optimization (pyswarms)"
 }
-
 joblib.dump(pso_model, "pso_model.pkl")
 
 # ===============================
 # 9. Save Scaler (.pkl)
 # ===============================
 joblib.dump(scaler, "scaler.pkl")
-
 print("✅ pso_model.pkl and scaler.pkl saved successfully")
+
