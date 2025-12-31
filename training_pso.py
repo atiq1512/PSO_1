@@ -6,55 +6,77 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 import pyswarms as ps
 
+# ===============================
 # 1. Load dataset
+# ===============================
 data = pd.read_csv("delhi_metro_updated.csv")
 
+# ===============================
 # 2. Select numeric features only
+# ===============================
 X = data[['Distance_km', 'Fare', 'Cost_per_passenger']]
 y = data['Passengers']
 feature_names = X.columns.tolist()
 
+# ===============================
 # 3. Train-test split
+# ===============================
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
 )
 
+# ===============================
 # 4. Scale features
+# ===============================
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
-# 5. Vectorized fitness function
+# ===============================
+# 5. Vectorized fitness function (broadcast fixed)
+# ===============================
 def fitness_function(weights):
-    w = weights[:, :-1]
-    b = weights[:, -1].reshape(-1,1)
-    y_pred = X_train_scaled @ w.T
-    y_pred += b
+    """
+    weights: shape (n_particles, n_features + 1)
+    returns: MSE per particle
+    """
+    w = weights[:, :-1]                  # particle weights
+    b = weights[:, -1].reshape(1, -1)   # particle bias, shape (1, n_particles)
+    y_pred = X_train_scaled @ w.T        # shape (n_samples, n_particles)
+    y_pred += b                          # broadcast bias across samples
     mse = np.mean((y_train.values.reshape(-1,1) - y_pred)**2, axis=0)
     return mse
 
-# 6. PSO optimization (faster for Colab)
-dimensions = X_train_scaled.shape[1] + 1  # weights + bias
+# ===============================
+# 6. PSO optimization
+# ===============================
+dimensions = X_train_scaled.shape[1] + 1  # features + bias
 options = {"c1": 1.5, "c2": 1.5, "w": 0.7}
 
 optimizer = ps.single.GlobalBestPSO(
-    n_particles=15,  # smaller → faster
+    n_particles=15,       # smaller for faster Colab run
     dimensions=dimensions,
     options=options
 )
 
 best_cost, best_position = optimizer.optimize(fitness_function, iters=50)
 
+# ===============================
 # 7. Extract best parameters
+# ===============================
 best_weights = best_position[:-1]
 best_bias = best_position[-1]
 
+# ===============================
 # 8. Evaluate model
+# ===============================
 y_test_pred = np.dot(X_test_scaled, best_weights) + best_bias
 test_mse = mean_squared_error(y_test, y_test_pred)
 print("Test MSE:", test_mse)
 
+# ===============================
 # 9. Save PSO model
+# ===============================
 pso_model = {
     "model_type": "PSO-Optimized Linear Regression",
     "weights": best_weights,
@@ -63,7 +85,9 @@ pso_model = {
 }
 joblib.dump(pso_model, "pso_model.pkl")
 
+# ===============================
 # 10. Save scaler
+# ===============================
 joblib.dump(scaler, "scaler.pkl")
 print("✅ pso_model.pkl and scaler.pkl saved successfully")
 
