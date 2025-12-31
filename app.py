@@ -3,14 +3,19 @@ import pandas as pd
 import numpy as np
 import joblib
 
-# Load model and scaler
+# -------------------------------
+# 1. Load model and scaler
+# -------------------------------
 model = joblib.load("pso_model.pkl")
 scaler = joblib.load("scaler.pkl")
 
 weights = model["weights"]
 bias = model["bias"]
-feature_names = model["feature_names"]
+feature_names = model["feature_names"]  # now ['Distance_km', 'Fare', 'Cost_per_passenger']
 
+# -------------------------------
+# 2. Streamlit UI
+# -------------------------------
 st.title("Delhi Metro Passengers Prediction (PSO)")
 
 # Input numeric features only
@@ -20,10 +25,14 @@ for feature in feature_names:
 
 X_input = pd.DataFrame([user_input])
 
-# Scale input
+# -------------------------------
+# 3. Scale input
+# -------------------------------
 X_scaled = scaler.transform(X_input)
 
-# Predict
+# -------------------------------
+# 4. Predict
+# -------------------------------
 y_pred = np.dot(X_scaled, weights) + bias
 
 st.subheader("Predicted Passengers")
