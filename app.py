@@ -4,40 +4,34 @@ import numpy as np
 import joblib
 
 # ===============================
-# 1. Load PSO model & scaler
+# Load PSO model & scaler
 # ===============================
 model = joblib.load("pso_model.pkl")
 scaler = joblib.load("scaler.pkl")
 
-# Ensure weights and bias are proper types
 weights = np.array(model["weights"])
 bias = float(model["bias"])
 feature_names = model["feature_names"]
 
 # ===============================
-# 2. Load dataset
+# Load dataset for preview
 # ===============================
 data = pd.read_csv("delhi_metro_updated.csv")
 data = data[['Distance_km', 'Fare', 'Cost_per_passenger', 'Passengers']].dropna()
 
 # ===============================
-# 3. App Title & Overview
+# App layout
 # ===============================
 st.set_page_config(page_title="Delhi Metro Passenger Prediction", layout="wide")
-st.title("🚇 Delhi Metro Passenger Prediction")
+st.title("🚇 Delhi Metro Passenger Prediction (PSO)")
+
 st.markdown("""
 Predict **Delhi Metro passenger demand** using a  
 **Particle Swarm Optimization (PSO) optimized regression model**.
-
-**Objective:** Minimize Mean Squared Error (MSE) between predicted and actual passengers.
-
-**Optimized using:**  
-- Particle Swarm Optimization (PSO)
-- Continuous weight & bias search space
 """)
 
 # ===============================
-# 4. Sidebar – User Input
+# Sidebar - Inputs
 # ===============================
 st.sidebar.header("🔢 Input Parameters")
 user_input = {}
@@ -45,48 +39,61 @@ user_input["Distance_km"] = st.sidebar.number_input("Distance (km)", 0.0, 100.0,
 user_input["Fare"] = st.sidebar.number_input("Fare", 0.0, 200.0, 30.0)
 user_input["Cost_per_passenger"] = st.sidebar.number_input("Cost per Passenger", 0.0, 100.0, 15.0)
 
-# Ensure correct column order
+# Ensure column order matches training
 X_input = pd.DataFrame([user_input])[['Distance_km', 'Fare', 'Cost_per_passenger']]
-
-# ===============================
-# 5. Scale input & Predict
-# ===============================
 X_scaled = scaler.transform(X_input)
-y_pred = np.dot(X_scaled, weights) + bias
 
 # ===============================
-# 6. Prediction Output
+# Prediction
 # ===============================
+# TEMP: exaggerate weights for demo
+weights_demo = weights * 50
+y_pred = np.dot(X_scaled, weights_demo) + bias
+
 st.subheader("📊 Prediction Result")
-st.metric("Estimated Passengers", round(y_pred[0], 2))
-
-# Optional: dynamic mini line chart for prediction
-st.line_chart(pd.DataFrame([y_pred], columns=["Predicted Passengers"]))
+st.metric("Estimated Passengers", round(y_pred[0],2))
 
 # ===============================
-# 7. Feature Contribution
+# Feature Contribution (Dynamic)
 # ===============================
-st.subheader("📌 Feature Contribution (PSO-Optimized Weights)")
-coef_df = pd.DataFrame({"Feature": feature_names, "Weight": weights})
-st.bar_chart(coef_df.set_index("Feature"))
+st.subheader("📌 Feature Contribution (Dynamic)")
+contribution = X_scaled[0] * weights_demo
+contrib_df = pd.DataFrame({
+    "Feature": feature_names,
+    "Contribution": contribution
+})
+st.bar_chart(contrib_df.set_index("Feature"))
 
 # ===============================
-# 8. Sensitivity Analysis
+# Sensitivity Analysis (Dynamic)
 # ===============================
 st.subheader("⚡ Sensitivity Analysis")
-sensitivity_df = coef_df.copy()
-sensitivity_df["Change"] = coef_df["Weight"].abs()  # simple proxy for impact
+sensitivity_df = contrib_df.copy()
+sensitivity_df["Impact"] = contrib_df["Contribution"].abs()
 st.line_chart(sensitivity_df.set_index("Feature"))
 
 # ===============================
-# 9. Dataset Preview
+# Max Prediction Demo
 # ===============================
-st.subheader("🗂 Dataset Sample (Delhi Metro)")
+st.subheader("🏁 Maximum Predicted Passengers (Demo)")
+X_max = pd.DataFrame([{
+    "Distance_km": 100,
+    "Fare": 200,
+    "Cost_per_passenger": 100
+}])[['Distance_km', 'Fare', 'Cost_per_passenger']]
+X_max_scaled = scaler.transform(X_max)
+y_max = np.dot(X_max_scaled, weights_demo) + bias
+st.metric("Max Estimated Passengers (demo)", round(y_max[0],2))
+
+# ===============================
+# Dataset preview
+# ===============================
+st.subheader("🗂 Dataset Sample")
 with st.expander("Show dataset preview"):
     st.dataframe(data.head(10))
 
 # ===============================
-# 10. PSO Explanation
+# PSO explanation
 # ===============================
 with st.expander("🧠 How PSO Works"):
     st.markdown("""
@@ -97,7 +104,7 @@ with st.expander("🧠 How PSO Works"):
 """)
 
 # ===============================
-# 11. Conclusion
+# Conclusion
 # ===============================
 st.subheader("✅ Conclusion")
 st.markdown("""
@@ -105,4 +112,5 @@ Particle Swarm Optimization successfully optimized the regression parameters.
 The model demonstrates reliable predictive performance and is suitable for
 transport demand forecasting applications.
 """)
+
 
