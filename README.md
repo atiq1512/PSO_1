@@ -1,4 +1,4 @@
-#🚇 Delhi Metro Passenger Prediction
+🚇 Delhi Metro Passenger Prediction
 
 Interactive Dashboard Demo using Particle Swarm Optimization (PSO)
 
