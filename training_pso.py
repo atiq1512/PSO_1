@@ -12,6 +12,11 @@ import pyswarms as ps
 data = pd.read_csv("delhi_metro_updated.csv")
 
 # ===============================
+# OPTIONAL: Use only first 5000 rows to speed up training
+# ===============================
+data = data.head(5000)
+
+# ===============================
 # 2. Select numeric features only
 # ===============================
 X = data[['Distance_km', 'Fare', 'Cost_per_passenger']]
@@ -33,17 +38,22 @@ X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
 # ===============================
-# 5. Vectorized fitness function (broadcast fixed)
+# 5. Vectorized fitness function
 # ===============================
 def fitness_function(weights):
     """
     weights: shape (n_particles, n_features + 1)
     returns: MSE per particle
     """
-    w = weights[:, :-1]                  # particle weights
-    b = weights[:, -1].reshape(1, -1)   # particle bias, shape (1, n_particles)
-    y_pred = X_train_scaled @ w.T        # shape (n_samples, n_particles)
+    if weights.size == 0:
+        return np.array([np.inf])
+    
+    w = weights[:, :-1]                  # (n_particles, n_features)
+    b = weights[:, -1].reshape(1, -1)   # (1, n_particles)
+    
+    y_pred = X_train_scaled @ w.T        # (n_samples, n_particles)
     y_pred += b                          # broadcast bias across samples
+    
     mse = np.mean((y_train.values.reshape(-1,1) - y_pred)**2, axis=0)
     return mse
 
