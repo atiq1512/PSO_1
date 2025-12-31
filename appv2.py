@@ -2,20 +2,10 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
-import plotly.express as px
 
-# ==================================================
-# Page Configuration
-# ==================================================
-st.set_page_config(
-    page_title="Delhi Metro Passenger Prediction",
-    page_icon="🚇",
-    layout="wide"
-)
-
-# ==================================================
-# Load PSO Model & Scaler
-# ==================================================
+# ===============================
+# 1. Load PSO model & scaler
+# ===============================
 model = joblib.load("pso_model.pkl")
 scaler = joblib.load("scaler.pkl")
 
@@ -23,171 +13,96 @@ weights = model["weights"]
 bias = model["bias"]
 feature_names = model["feature_names"]
 
-# ==================================================
-# Load Dataset
-# ==================================================
+# ===============================
+# 2. Load dataset
+# ===============================
 data = pd.read_csv("delhi_metro_updated.csv")
-data = data[['Distance_km', 'Fare', 'Cost_per_passenger', 'Passengers']]
-data = data.dropna()
+data = data[['Distance_km', 'Fare', 'Cost_per_passenger', 'Passengers']].dropna()
 
-# ==================================================
-# Header Section
-# ==================================================
-st.markdown(
-    """
-    <h1 style='text-align: center;'>🚇 Delhi Metro Passenger Prediction</h1>
-    <p style='text-align: center; font-size:18px;'>
-    PSO-Optimized Regression Model for Transport Demand Forecasting
-    </p>
-    <hr>
-    """,
-    unsafe_allow_html=True
-)
+# ===============================
+# 3. App Title & Overview
+# ===============================
+st.set_page_config(page_title="Delhi Metro Passenger Prediction", layout="wide")
+st.title("🚇 Delhi Metro Passenger Prediction")
+st.markdown("""
+Predict **Delhi Metro passenger demand** using a  
+**Particle Swarm Optimization (PSO) optimized regression model**.
 
-# ==================================================
-# Project Overview
-# ==================================================
-with st.container():
-    st.subheader("📌 Project Overview")
-    st.write(
-        """
-        This application predicts **Delhi Metro passenger demand** using a  
-        **Particle Swarm Optimization (PSO) based linear regression model**.
+**Objective:** Minimize Mean Squared Error (MSE) between predicted and actual passengers.
 
-        **Objective:**  
-        Minimize **Mean Squared Error (MSE)** between predicted and actual passengers.
+**Optimized using:**  
+- Particle Swarm Optimization (PSO)
+- Continuous weight & bias search space
+""")
 
-        **Optimization Method:**  
-        - Particle Swarm Optimization (PSO)  
-        - Continuous search for optimal weights and bias
-        """
-    )
+# ===============================
+# 4. Sidebar – User Input
+# ===============================
+st.sidebar.header("🔢 Input Parameters")
+user_input = {}
+user_input["Distance_km"] = st.sidebar.number_input("Distance (km)", 0.0, 100.0, 10.0)
+user_input["Fare"] = st.sidebar.number_input("Fare", 0.0, 200.0, 30.0)
+user_input["Cost_per_passenger"] = st.sidebar.number_input("Cost per Passenger", 0.0, 100.0, 15.0)
+X_input = pd.DataFrame([user_input])
 
-# ==================================================
-# User Input & Prediction
-# ==================================================
-st.markdown("## 🔢 Passenger Prediction")
+# ===============================
+# 5. Scale input & Predict
+# ===============================
+X_scaled = scaler.transform(X_input)
+y_pred = np.dot(X_scaled, weights) + bias
 
-col1, col2 = st.columns([1, 1])
+# ===============================
+# 6. Prediction Output
+# ===============================
+st.subheader("📊 Prediction Result")
+st.metric("Estimated Passengers", int(y_pred[0]))
 
-with col1:
-    st.markdown("### 🧾 Input Parameters")
+# ===============================
+# 7. Feature Contribution
+# ===============================
+st.subheader("📌 Feature Contribution (PSO-Optimized Weights)")
+coef_df = pd.DataFrame({"Feature": feature_names, "Weight": weights})
 
-    distance = st.number_input(
-        "🚏 Distance (km)",
-        min_value=0.0,
-        value=10.0,
-        step=0.5
-    )
+# Use Streamlit bar chart
+st.bar_chart(coef_df.set_index("Feature"))
 
-    fare = st.number_input(
-        "💰 Fare",
-        min_value=0.0,
-        value=30.0,
-        step=1.0
-    )
+# ===============================
+# 8. Sensitivity Analysis (Optional)
+# ===============================
+st.subheader("⚡ Sensitivity Analysis")
+sensitivity_df = coef_df.copy()
+sensitivity_df["Change"] = coef_df["Weight"].abs()  # simple proxy for impact
+st.line_chart(sensitivity_df.set_index("Feature"))
 
-    cost = st.number_input(
-        "📉 Cost per Passenger",
-        min_value=0.0,
-        value=15.0,
-        step=1.0
-    )
+# ===============================
+# 9. Dataset Preview
+# ===============================
+st.subheader("🗂 Dataset Sample (Delhi Metro)")
+with st.expander("Show dataset preview"):
+    st.dataframe(data.head(10))
 
-    X_input = pd.DataFrame([{
-        "Distance_km": distance,
-        "Fare": fare,
-        "Cost_per_passenger": cost
-    }])
+# ===============================
+# 10. PSO Explanation
+# ===============================
+with st.expander("🧠 How PSO Works"):
+    st.markdown("""
+- Each particle represents a candidate solution (weights + bias)
+- Fitness function: **Mean Squared Error (MSE)**
+- Global best solution guides swarm convergence
+- Bound constraints prevent numerical instability
+""")
 
-with col2:
-    st.markdown("### 📊 Prediction Output")
+# ===============================
+# 11. Conclusion
+# ===============================
+st.subheader("✅ Conclusion")
+st.markdown("""
+Particle Swarm Optimization successfully optimized the regression parameters
+for metro passenger prediction.  
 
-    X_scaled = scaler.transform(X_input)
-    y_pred = np.dot(X_scaled, weights) + bias
-
-    st.metric(
-        label="🚇 Estimated Number of Passengers",
-        value=f"{int(y_pred[0]):,}"
-    )
-
-    st.info(
-        "Prediction is generated using PSO-optimized regression parameters."
-    )
-
-# ==================================================
-# Feature Contribution Section
-# ==================================================
-st.markdown("## 📌 Feature Contribution Analysis")
-
-coef_df = pd.DataFrame({
-    "Feature": feature_names,
-    "Weight": weights
-}).set_index("Feature")
-
-st.bar_chart(coef_df)
-
-# ==================================================
-# Sensitivity Analysis Section (Interactive)
-# ==================================================
-st.markdown("## 📈 Sensitivity Analysis")
-st.caption("Effect of distance on passenger demand (other variables fixed)")
-
-distance_range = np.linspace(1, 50, 50)
-
-sensitivity_df = pd.DataFrame({
-    "Distance_km": distance_range,
-    "Fare": fare,
-    "Cost_per_passenger": cost
-})
-
-X_sensitivity_scaled = scaler.transform(sensitivity_df)
-predicted_passengers = np.dot(X_sensitivity_scaled, weights) + bias
-sensitivity_df["Predicted Passengers"] = predicted_passengers.astype(int)
-
-fig = px.line(
-    sensitivity_df,
-    x="Distance_km",
-    y="Predicted Passengers",
-    markers=True,
-    title="Passenger Demand Sensitivity to Distance"
-)
-
-st.plotly_chart(fig, use_container_width=True)
-
-# ==================================================
-# Dataset Preview Section
-# ==================================================
-st.markdown("## 🗂 Dataset Preview")
-
-with st.expander("Click to view sample data from Delhi Metro dataset"):
-    st.dataframe(data.head(10), use_container_width=True)
-
-# ==================================================
-# PSO Explanation Section
-# ==================================================
-st.markdown("## 🧠 Particle Swarm Optimization (PSO)")
-
-st.write(
-    """
-    - Each **particle** represents a candidate solution (weights + bias)
-    - **Fitness function:** Mean Squared Error (MSE)
-    - Particles update positions based on:
-        - Personal best solution
-        - Global best solution
-    - Bound constraints are applied to ensure numerical stability
-    """
-)
-
-# ==================================================
-# Conclusion Section
-# ==================================================
-st.markdown("## ✅ Conclusion")
-
-st.success(
-    """
-    Particle Swarm Optimization successfully optimized the regression parameters
-    for Delhi Metro passenger prediction.
+The model demonstrates reliable performance and is suitable for
+transport demand forecasting applications.
+""")
 
     The model demonstrates reliable predictive performance and is suitable for
     **transport demand forecasting and planning applications**.
