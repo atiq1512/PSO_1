@@ -44,7 +44,7 @@ X_scaled = scaler.transform(X_input)
 # ===============================
 # Prediction
 # ===============================
-weights_demo = weights * 750  # Demo-friendly exaggeration
+weights_demo = weights * 1.0  # Demo-friendly exaggeration
 y_pred = np.dot(X_scaled, weights_demo) + bias
 
 # ===============================
